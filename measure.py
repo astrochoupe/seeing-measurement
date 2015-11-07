@@ -9,7 +9,8 @@ import numpy as np
 
 # class definitions
 
-class Slice():
+
+class Slice:
     """Slice of a star trail"""
 
     def __init__(self, positions, intensities):
@@ -18,8 +19,8 @@ class Slice():
 
         # move the y data to the axis to allow the fitting
         # (because the fitting doesn't work if the data are not near the x axis)
-        minIntensity = min(self.intensities)
-        self.relative_intensities = self.intensities - minIntensity
+        min_intensity = min(self.intensities)
+        self.relative_intensities = self.intensities - min_intensity
 
     def print_positions(self):
         print "positions = %s " % self.positions
@@ -42,30 +43,31 @@ class Slice():
     def fwhm_from_gaussian(self):
         """FWHM calculation with the best-fit model"""
         sigma = self.gaussian.stddev.value
-        self.fwhmInPx = 2 * np.sqrt(2 * np.log(2)) * sigma
+        self.fwhm_in_px = 2 * np.sqrt(2 * np.log(2)) * sigma
 
     def print_graph(self):
         # 200 dots from first to last position to have a smooth bell curve
-        firstPosition = self.positions[0]
-        lastPosition = self.positions[len(self.positions)-1]
-        finerPositions = np.linspace(firstPosition, lastPosition, 200)
+        first_position = self.positions[0]
+        last_position = self.positions[len(self.positions)-1]
+        finer_positions = np.linspace(first_position, last_position, 200)
 
         plt.figure(1)
         plt.plot(self.positions, self.relative_intensities, 'ko')
-        plt.plot(finerPositions, self.gaussian(finerPositions))
+        plt.plot(finer_positions, self.gaussian(finer_positions))
         plt.xlabel('Position (pixel)')
         plt.ylabel('Relative intensity (ADU)')
         plt.show()
 
-class StarTrail():
+
+class StarTrail:
     """A star trail"""
 
-    def __init__(self, xmin, xmax, ymin, ymax, imgData):
+    def __init__(self, xmin, xmax, ymin, ymax, img_data):
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
-        self.imgData = imgData
+        self.img_data = img_data
         self.fwhms = np.array([])
 
     def calculate_fwhms(self):
@@ -80,7 +82,7 @@ class StarTrail():
 
             for x in range(self.xmin, self.xmax):
                 x_positions = np.append(x_positions, x)
-                intensities = np.append(intensities, self.imgData[y, x])
+                intensities = np.append(intensities, self.img_data[y, x])
 
             slice = Slice(x_positions, intensities)
             slice.fit_gaussian()
@@ -88,12 +90,12 @@ class StarTrail():
             #slice.print_graph()
 
             sampling = 0.206  # arcsec by pixel
-            fwhmInArcsec = sampling * slice.fwhmInPx
+            fwhm_in_arcsec = sampling * slice.fwhm_in_px
 
             #print "FWHM in pixels : %f" % slice.fwhmInPx
-            #print "FWHM in arcsec : %f" % fwhmInArcsec
+            #print "FWHM in arcsec : %f" % fwhm_in_arcsec
 
-            self.fwhms = np.append(self.fwhms, fwhmInArcsec)
+            self.fwhms = np.append(self.fwhms, fwhm_in_arcsec)
 
         self.fwhm_samples = self.fwhms.size
         self.fwhm_min = np.min(self.fwhms)
@@ -102,7 +104,7 @@ class StarTrail():
         self.fwhm_median = np.median(self.fwhms)
         self.fwhm_sdt_dev = np.std(self.fwhms)
 
-    def print_results(self):
+    def print_fwhms_results(self):
         """Print the min, max, mean, median and standard deviation of the FWHMs measurement"""
 
         print "Samples = %i " % self.fwhm_samples
@@ -112,7 +114,7 @@ class StarTrail():
         print "FWHM median = %f " % self.fwhm_median
         print "FWHM standard deviation = %f " % self.fwhm_sdt_dev
 
-    def print_graph(self):
+    def print_fwhms_graph(self):
         """Plot the FWHM with the best-fit model along the star trail"""
 
         plt.figure(1)
@@ -126,7 +128,7 @@ class StarTrail():
 
 print "Read FITS file"
 hdulist = fits.open('/home/didier/Bureau/zenith-1.fits')
-imgData = hdulist[0].data
+img_data = hdulist[0].data
 
 """
 xmin = 2070
@@ -140,10 +142,10 @@ xmax = 2070
 ymin = 3275
 ymax = 3750
 
-startrail = StarTrail(xmin, xmax, ymin, ymax, imgData)
+startrail = StarTrail(xmin, xmax, ymin, ymax, img_data)
 startrail.calculate_fwhms()
-startrail.print_results()
-startrail.print_graph()
+startrail.print_fwhms_results()
+startrail.print_fwhms_graph()
 
 # Close FITS file
 
