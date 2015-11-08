@@ -13,9 +13,19 @@ import numpy as np
 class Slice:
     """Slice of a star trail"""
 
-    def __init__(self, positions, intensities):
+    def __init__(self, positions, intensities, approximate_fwhm_px = 5.0):
+        """
+        Construct a Slice object.
+
+        :param positions: list of the position of each intensity in the image
+        :param intensities: list of intensities in ADU
+        :param approximate_fwhm_px: float, approximate FWHM in pixel to help to fit the gaussian
+        :return:
+        """
+
         self.positions = positions
         self.intensities = intensities
+        self.approximative_fwhm_px = approximate_fwhm_px
 
         # move the y data to the axis to allow the fitting
         # (because the fitting doesn't work if the data are not near the x axis)
@@ -35,8 +45,9 @@ class Slice:
         """Fit the data using a Gaussian"""
         max_relative_intensity = max(self.relative_intensities)
         mean_position = sum(self.positions)/len(self.positions)
+        approximate_stddev = self.approximative_fwhm_px / (2 * np.sqrt(2 * np.log(2)))
 
-        gaussian_init = models.Gaussian1D(amplitude=max_relative_intensity, mean=mean_position, stddev=3)
+        gaussian_init = models.Gaussian1D(amplitude=max_relative_intensity, mean=mean_position, stddev=approximate_stddev)
         fit_gaussian = fitting.LevMarLSQFitter()
         self.gaussian = fit_gaussian(gaussian_init, self.positions, self.relative_intensities)
 
@@ -62,12 +73,22 @@ class Slice:
 class StarTrail:
     """A star trail"""
 
-    def __init__(self, xmin, xmax, ymin, ymax, img_data):
-        self.xmin = xmin
-        self.xmax = xmax
-        self.ymin = ymin
-        self.ymax = ymax
+    def __init__(self, startrailcoordinates, img_data, sampling):
+        """
+        Construct a StarTrail object.
+
+        :param startrailcoordinates: StarTrailCoordinates object
+            Coordinates of the star trail in the image
+        :param img_data: HDU object
+        :param sampling: sampling in arcsec by pixel
+        :return:
+        """
+        self.xmin = startrailcoordinates.xmin
+        self.xmax = startrailcoordinates.xmax
+        self.ymin = startrailcoordinates.ymin
+        self.ymax = startrailcoordinates. ymax
         self.img_data = img_data
+        self.sampling = sampling
         self.fwhms = np.array([])
 
     def calculate_fwhms(self):
@@ -89,8 +110,7 @@ class StarTrail:
             slice.fwhm_from_gaussian()
             #slice.print_graph()
 
-            sampling = 0.206  # arcsec by pixel
-            fwhm_in_arcsec = sampling * slice.fwhm_in_px
+            fwhm_in_arcsec = self.sampling * slice.fwhm_in_px
 
             #print "FWHM in pixels : %f" % slice.fwhmInPx
             #print "FWHM in arcsec : %f" % fwhm_in_arcsec
@@ -108,11 +128,11 @@ class StarTrail:
         """Print the min, max, mean, median and standard deviation of the FWHMs measurement"""
 
         print "Samples = %i " % self.fwhm_samples
-        print "FWHM min = %f " % self.fwhm_min
-        print "FWHM max = %f " % self.fwhm_max
-        print "FWHM mean = %f " % self.fwhm_mean
-        print "FWHM median = %f " % self.fwhm_median
-        print "FWHM standard deviation = %f " % self.fwhm_sdt_dev
+        print "FWHM min = %f arcsec " % self.fwhm_min
+        print "FWHM max = %f arcsec " % self.fwhm_max
+        print "FWHM mean = %f arcsec " % self.fwhm_mean
+        print "FWHM median = %f arcsec " % self.fwhm_median
+        print "FWHM standard deviation = %f arcsec " % self.fwhm_sdt_dev
 
     def print_fwhms_graph(self):
         """Plot the FWHM with the best-fit model along the star trail"""
@@ -124,28 +144,37 @@ class StarTrail:
         plt.show()
 
 
+class StarTrailCoordinates:
+
+    def __init__(self, xmin, xmax, ymin, ymax):
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+
+
+# ################
+# Main program
+# ################
+
 # Open FITS file
 
 print "Read FITS file"
 hdulist = fits.open('/home/didier/Bureau/zenith-1.fits')
 img_data = hdulist[0].data
 
-"""
-xmin = 2070
-xmax = 2110
-ymin = 3212
-ymax = 3700
-"""
+startrailcoord1 = StarTrailCoordinates(xmin = 2035, xmax = 2070, ymin = 3275, ymax = 3750)
+startrailcoord2 = StarTrailCoordinates(xmin = 2600, xmax = 2630, ymin = 1666, ymax = 2178)
 
-xmin = 2035
-xmax = 2070
-ymin = 3275
-ymax = 3750
+startrail1 = StarTrail(startrailcoord1, img_data, sampling = 0.206)
+startrail1.calculate_fwhms()
+startrail1.print_fwhms_results()
+startrail1.print_fwhms_graph()
 
-startrail = StarTrail(xmin, xmax, ymin, ymax, img_data)
-startrail.calculate_fwhms()
-startrail.print_fwhms_results()
-startrail.print_fwhms_graph()
+startrail2 = StarTrail(startrailcoord2, img_data, sampling = 0.206)
+startrail2.calculate_fwhms()
+startrail2.print_fwhms_results()
+startrail2.print_fwhms_graph()
 
 # Close FITS file
 
