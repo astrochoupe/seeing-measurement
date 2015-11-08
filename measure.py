@@ -13,7 +13,7 @@ import numpy as np
 class Slice:
     """Slice of a star trail"""
 
-    def __init__(self, positions, intensities, approximate_fwhm_px = 5.0):
+    def __init__(self, positions, intensities, approximate_fwhm_px = 6.0):
         """
         Construct a Slice object.
 
@@ -157,25 +157,30 @@ class StarTrailCoordinates:
 # Main program
 # ################
 
-# Open FITS file
+def main():
+    # Open FITS file
 
-print "Read FITS file"
-hdulist = fits.open('/home/didier/Bureau/zenith-1.fits')
-img_data = hdulist[0].data
+    print "Read FITS file"
+    hdulist = fits.open('/home/didier/Bureau/zenith-1.fits')
+    img_data = hdulist[0].data
 
-startrailcoord1 = StarTrailCoordinates(xmin = 2035, xmax = 2070, ymin = 3275, ymax = 3750)
-startrailcoord2 = StarTrailCoordinates(xmin = 2600, xmax = 2630, ymin = 1666, ymax = 2178)
+    startrailcoord1 = StarTrailCoordinates(xmin = 2035, xmax = 2070, ymin = 3275, ymax = 3750)
+    startrailcoord2 = StarTrailCoordinates(xmin = 2600, xmax = 2630, ymin = 1666, ymax = 2178)
 
-startrail1 = StarTrail(startrailcoord1, img_data, sampling = 0.206)
-startrail1.calculate_fwhms()
-startrail1.print_fwhms_results()
-startrail1.print_fwhms_graph()
+    """
+    startrail1 = StarTrail(startrailcoord1, img_data, sampling = 0.206)
+    startrail1.calculate_fwhms()
+    startrail1.print_fwhms_results()
+    startrail1.print_fwhms_graph()
+    """
+    startrail2 = StarTrail(startrailcoord2, img_data, sampling = 0.206)
+    startrail2.calculate_fwhms()
+    startrail2.print_fwhms_results()
+    startrail2.print_fwhms_graph()
 
-startrail2 = StarTrail(startrailcoord2, img_data, sampling = 0.206)
-startrail2.calculate_fwhms()
-startrail2.print_fwhms_results()
-startrail2.print_fwhms_graph()
+    # Close FITS file
 
-# Close FITS file
+    hdulist.close()
 
-hdulist.close()
+
+main()
