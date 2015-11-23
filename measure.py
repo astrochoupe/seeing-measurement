@@ -2,10 +2,17 @@
 # coding=utf-8
 __author__ = 'Didier Walliang'
 
-from astropy.io import fits
-import matplotlib.pyplot as plt
-from astropy.modeling import models, fitting
+import math
 import numpy as np
+import matplotlib.pyplot as plt
+from astropy.io import fits
+from astropy.modeling import models, fitting
+from astropy.convolution import Gaussian2DKernel
+from astropy.stats import gaussian_fwhm_to_sigma
+from astropy import units as u
+from photutils import segment_properties
+from photutils import detect_sources
+from photutils import detect_threshold
 
 # class definitions
 
@@ -152,32 +159,111 @@ class StarTrailCoordinates:
         self.ymin = ymin
         self.ymax = ymax
 
+    def __str__(self):
+        return "xmin = %i ; xmax = %i ; ymin = %i ; ymax = %i" % (self.xmin, self.xmax, self.ymin, self.ymax)
+
+
+class TrailsImage:
+    """An image containing star trails"""
+
+    def __init__(self, data, sampling, target_fwhm_arcsec):
+        """
+        Construct a TrailsImage object.
+
+        :param data: HDU object
+        :param sampling: sampling in arcsec by pixel
+        :param target_fwhm_arcsec: estimated FWHM in arcsec (to help the calcultation)
+        :return:
+        """
+        self.data = data
+        self.sampling = sampling
+        self.target_fwhm_arcsec = target_fwhm_arcsec
+
+    def search_trails(self):
+        """Search star trails in image"""
+        threshold = detect_threshold(self.data, snr=1)
+        sigma = 2.0 * gaussian_fwhm_to_sigma
+        kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
+        self.segments = detect_sources(self.data, threshold, npixels=1000, filter_kernel=kernel)
+        self.segments_properties = segment_properties(self.data, self.segments)
+
+    def nb_trails(self):
+        """
+        Give the number of trails detected
+
+        :return: number of trails detected
+        """
+        return len(self.segments_properties)
+
+    def calculate_fwhm(self):
+        """Measure the FWHM of the star trails"""
+
+        self.trails_fwhm = np.array([])
+
+        # for each star trail
+        for properties in self.segments_properties:
+            # x coordinate of the middle of the trail
+            xmiddle = (properties.xmax + properties.xmin)/2
+
+            target_fwhm_px = self.target_fwhm_arcsec/self.sampling
+
+            xmin = int(math.floor(xmiddle.value - target_fwhm_px*2))
+            xmax = int(math.ceil(xmiddle.value + target_fwhm_px*2))
+
+            ymin = int(properties.ymin.value)
+            ymax = int(properties.ymax.value)
+
+            startrailcoord = StarTrailCoordinates(xmin, xmax, ymin, ymax)
+
+            #print startrailcoord
+
+            startrail = StarTrail(startrailcoord, self.data, self.sampling)
+            startrail.calculate_fwhms()
+            #startrail.print_fwhms_results()
+            #startrail.print_fwhms_graph()
+
+            median_trail_fwhm = startrail.fwhm_median
+            self.trails_fwhm = np.append(self.trails_fwhm, median_trail_fwhm)
+
+    def mean_fwhm(self):
+        """Give the mean FWHM of the trails"""
+        return np.mean(self.trails_fwhm)
+
 
 # ################
 # Main program
 # ################
 
 def main():
+    sampling = 0.206
+    target_fwhm_arcsec = 1.5;
+
     # Open FITS file
 
     print "Read FITS file"
     hdulist = fits.open('/home/didier/Bureau/zenith-1.fits')
     img_data = hdulist[0].data
 
+    img = TrailsImage(img_data, sampling, target_fwhm_arcsec)
+    img.search_trails()
+    img.calculate_fwhm()
+    print "Number of trails: %i" % img.nb_trails()
+    print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+
+    """
     startrailcoord1 = StarTrailCoordinates(xmin = 2035, xmax = 2070, ymin = 3275, ymax = 3750)
     startrailcoord2 = StarTrailCoordinates(xmin = 2600, xmax = 2630, ymin = 1666, ymax = 2178)
 
-    """
-    startrail1 = StarTrail(startrailcoord1, img_data, sampling = 0.206)
+    startrail1 = StarTrail(startrailcoord1, img_data, sampling = sampling)
     startrail1.calculate_fwhms()
     startrail1.print_fwhms_results()
     startrail1.print_fwhms_graph()
-    """
-    startrail2 = StarTrail(startrailcoord2, img_data, sampling = 0.206)
+
+    startrail2 = StarTrail(startrailcoord2, img_data, sampling = sampling)
     startrail2.calculate_fwhms()
     startrail2.print_fwhms_results()
     startrail2.print_fwhms_graph()
-
+    """
     # Close FITS file
 
     hdulist.close()
