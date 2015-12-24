@@ -210,6 +210,9 @@ class TrailsImage:
             xmin = int(math.floor(xmiddle.value - target_fwhm_px*2))
             xmax = int(math.ceil(xmiddle.value + target_fwhm_px*2))
 
+            if(xmin < 1 or xmax > 4096):
+                continue
+
             ymin = int(properties.ymin.value)
             ymax = int(properties.ymax.value)
 
@@ -238,17 +241,31 @@ def main():
     sampling = 0.206
     target_fwhm_arcsec = 1.5;
 
-    # Open FITS file
+    measurements = np.array([])
 
-    print "Read FITS file"
-    hdulist = fits.open('/home/didier/Bureau/zenith-1.fits')
-    img_data = hdulist[0].data
+    # For each file
+    for i in range(1,92):
 
-    img = TrailsImage(img_data, sampling, target_fwhm_arcsec)
-    img.search_trails()
-    img.calculate_fwhm()
-    print "Number of trails: %i" % img.nb_trails()
-    print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+        # Open FITS files
+        filename = 'zenith-' + str(i) + '.fits'
+        path = '/home/didier/seeing_images/2015-09-19/' + filename
+        print "Read FITS file " + path
+        hdulist = fits.open(path)
+        img_data = hdulist[0].data
+
+        img = TrailsImage(img_data, sampling, target_fwhm_arcsec)
+        img.search_trails()
+        img.calculate_fwhm()
+        print "Number of trails: %i" % img.nb_trails()
+        print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+        measurements = np.append(measurements, img.mean_fwhm())
+
+        # Close FITS file
+        hdulist.close()
+
+    plt.figure(1)
+    plt.plot(measurements, 'ko')
+    plt.show()
 
     """
     startrailcoord1 = StarTrailCoordinates(xmin = 2035, xmax = 2070, ymin = 3275, ymax = 3750)
@@ -264,9 +281,7 @@ def main():
     startrail2.print_fwhms_results()
     startrail2.print_fwhms_graph()
     """
-    # Close FITS file
 
-    hdulist.close()
 
 
 main()
