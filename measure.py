@@ -5,6 +5,7 @@ __author__ = 'Didier Walliang'
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import dates
 from astropy.io import fits
 from astropy.modeling import models, fitting
 from astropy.convolution import Gaussian2DKernel
@@ -249,9 +250,10 @@ def main():
         results.write('Date and time UTC,MJD,Mean FWHM in arcsec\n');
 
         measurements = np.array([])
+        datetimes = np.array([])
 
         # For each file
-        for i in range(3,4):
+        for i in range(1,92):
 
             # Open FITS files
             filename = 'zenith-' + str(i) + '.fits'
@@ -275,6 +277,7 @@ def main():
             print "Number of trails: %i" % img.nb_trails()
             print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
             measurements = np.append(measurements, img.mean_fwhm())
+            datetimes = np.append(datetimes, time.datetime)
 
             # Close FITS file
             hdulist.close()
@@ -283,25 +286,16 @@ def main():
 
     results.closed
 
+    time.out_subfmt='date'
+
     plt.figure(1)
-    plt.plot(measurements, 'ko')
+    plt.title("Seeing St-Veran for " + time.iso + ' (MJD ' + str(int(time.mjd)) + ')', fontsize=16)
+    plt.plot(datetimes, measurements, 'ko')
+    plt.xlabel('Time (UT)')
+    plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+    plt.xticks(rotation='vertical')
+    plt.ylabel('Seeing (arcsec)')
     plt.show()
-
-    """
-    startrailcoord1 = StarTrailCoordinates(xmin = 2035, xmax = 2070, ymin = 3275, ymax = 3750)
-    startrailcoord2 = StarTrailCoordinates(xmin = 2600, xmax = 2630, ymin = 1666, ymax = 2178)
-
-    startrail1 = StarTrail(startrailcoord1, img_data, sampling = sampling)
-    startrail1.calculate_fwhms()
-    startrail1.print_fwhms_results()
-    startrail1.print_fwhms_graph()
-
-    startrail2 = StarTrail(startrailcoord2, img_data, sampling = sampling)
-    startrail2.calculate_fwhms()
-    startrail2.print_fwhms_results()
-    startrail2.print_fwhms_graph()
-    """
-
 
 
 main()
