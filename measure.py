@@ -241,23 +241,23 @@ class TrailsImage:
 # Main program
 # ################
 
-def main():
+def main(directory, file_prefix, file_suffix, number_of_files):
     sampling = 0.206
     target_fwhm_arcsec = 1.5;
 
     # create a file to write the results
-    with open('seeing_measurement.csv', 'w') as results:
+    with open('seeing_measurement.csv', 'a') as results:
         results.write('Date and time UTC,MJD,Mean FWHM in arcsec\n');
 
         measurements = np.array([])
         datetimes = np.array([])
 
         # For each file
-        for i in range(1,92):
+        for i in range(1,number_of_files+1):
 
             # Open FITS files
-            filename = 'zenith-' + str(i) + '.fits'
-            path = '/home/didier/seeing_images/2015-09-19/' + filename
+            filename = file_prefix + str(i) + file_suffix
+            path = directory + filename
             print "Read FITS file " + path
             hdulist = fits.open(path)
 
@@ -289,13 +289,16 @@ def main():
     time.out_subfmt='date'
 
     plt.figure(1)
-    plt.title("Seeing St-Veran for " + time.iso + ' (MJD ' + str(int(time.mjd)) + ')', fontsize=16)
+    plt.title("Seeing St-Veran " + time.iso + ' (MJD ' + str(int(time.mjd)) + ')', fontsize=16)
     plt.plot(datetimes, measurements, 'ko')
     plt.xlabel('Time (UT)')
-    plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+    plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
     plt.xticks(rotation='vertical')
     plt.ylabel('Seeing (arcsec)')
     plt.show()
 
 
-main()
+main('/home/didier/seeing_images/2015-09-17/', 'zenith_sans_suivi-', '.fits', 53)
+#main('/home/didier/seeing_images/2015-09-18/', 'zenith-', '.fits', 175)
+#main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 91)
+#main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 153)
