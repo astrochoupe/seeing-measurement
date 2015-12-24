@@ -10,6 +10,7 @@ from astropy.modeling import models, fitting
 from astropy.convolution import Gaussian2DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy import units as u
+from astropy.time import Time
 from photutils import segment_properties
 from photutils import detect_sources
 from photutils import detect_threshold
@@ -166,18 +167,20 @@ class StarTrailCoordinates:
 class TrailsImage:
     """An image containing star trails"""
 
-    def __init__(self, data, sampling, target_fwhm_arcsec):
+    def __init__(self, data, sampling, target_fwhm_arcsec, length_x_axis):
         """
         Construct a TrailsImage object.
 
         :param data: HDU object
         :param sampling: sampling in arcsec by pixel
         :param target_fwhm_arcsec: estimated FWHM in arcsec (to help the calcultation)
+        :param length_x_axis: length of X axis
         :return:
         """
         self.data = data
         self.sampling = sampling
         self.target_fwhm_arcsec = target_fwhm_arcsec
+        self.length_x_axis = length_x_axis
 
     def search_trails(self):
         """Search star trails in image"""
@@ -210,7 +213,7 @@ class TrailsImage:
             xmin = int(math.floor(xmiddle.value - target_fwhm_px*2))
             xmax = int(math.ceil(xmiddle.value + target_fwhm_px*2))
 
-            if(xmin < 1 or xmax > 4096):
+            if(xmin < 1 or xmax > self.length_x_axis):
                 continue
 
             ymin = int(properties.ymin.value)
@@ -241,27 +244,44 @@ def main():
     sampling = 0.206
     target_fwhm_arcsec = 1.5;
 
-    measurements = np.array([])
+    # create a file to write the results
+    with open('seeing_measurement.csv', 'w') as results:
+        results.write('Date and time UTC,MJD,Mean FWHM in arcsec\n');
 
-    # For each file
-    for i in range(1,92):
+        measurements = np.array([])
 
-        # Open FITS files
-        filename = 'zenith-' + str(i) + '.fits'
-        path = '/home/didier/seeing_images/2015-09-19/' + filename
-        print "Read FITS file " + path
-        hdulist = fits.open(path)
-        img_data = hdulist[0].data
+        # For each file
+        for i in range(3,4):
 
-        img = TrailsImage(img_data, sampling, target_fwhm_arcsec)
-        img.search_trails()
-        img.calculate_fwhm()
-        print "Number of trails: %i" % img.nb_trails()
-        print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
-        measurements = np.append(measurements, img.mean_fwhm())
+            # Open FITS files
+            filename = 'zenith-' + str(i) + '.fits'
+            path = '/home/didier/seeing_images/2015-09-19/' + filename
+            print "Read FITS file " + path
+            hdulist = fits.open(path)
 
-        # Close FITS file
-        hdulist.close()
+            # Get date and time of observation in FITS header
+            datetime = hdulist[0].header['DATE-OBS']
+            time = Time(datetime, format='isot', scale='utc')
+
+            # Get length of X axis in FITS header
+            length_x_axis = hdulist[0].header['NAXIS1']
+
+            # Analyse data
+            img_data = hdulist[0].data
+            img = TrailsImage(img_data, sampling, target_fwhm_arcsec, length_x_axis)
+            img.search_trails()
+            img.calculate_fwhm()
+            print "Date and time: %s UT" % datetime
+            print "Number of trails: %i" % img.nb_trails()
+            print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+            measurements = np.append(measurements, img.mean_fwhm())
+
+            # Close FITS file
+            hdulist.close()
+
+            results.write(datetime + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + '\n');
+
+    results.closed
 
     plt.figure(1)
     plt.plot(measurements, 'ko')
