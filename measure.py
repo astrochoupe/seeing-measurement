@@ -241,13 +241,27 @@ class TrailsImage:
 # Main program
 # ################
 
-def main(directory, file_prefix, file_suffix, number_of_files, location):
+def main(directory, file_prefix, file_suffix, number_of_files, location=''):
+    """
+    Measure the seeing of a sequence of images
+
+    :param directory: the directory where the image files are located (with a slash or backslash at the end)
+    :param file_prefix: beginning of the name of the files (example: 'seeing-')
+    :param file_suffix: end of the name of the files (with extension) (example: '.fit')
+                        It is assumed that the file format is FITS.
+    :param number_of_files: the number of files (begins with 1 and ends with this number).
+                            It is assumed that the number in the name of the files do not contains leading zero
+                            (example: 'seeing-1.fit' to 'seeing-152.fit').
+    :param location: the location where the images have been taken. It is printed in the title of the plot image.
+    :return: void. Create or append to a file named 'seeing_measurement.csv' in execution directory with the results.
+                   Show a chart with the results.
+    """
     sampling = 0.206
     target_fwhm_arcsec = 1.5; # to help the gaussian fitting
 
-    # create a file to write the results
+    # Create a file to write the results
     with open('seeing_measurement.csv', 'a') as results:
-        # header of CSV file
+        # Header of CSV file
         results.write('Date and time UTC,MJD,Seeing in arcsec\n');
 
         measurements = np.array([])
@@ -294,8 +308,10 @@ def main(directory, file_prefix, file_suffix, number_of_files, location):
             if(i == 1):
                 start_time = time
 
+    # Close results file
     results.closed
 
+    # Plot results
     start_time.out_subfmt='date'
 
     plt.figure(1)
