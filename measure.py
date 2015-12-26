@@ -241,13 +241,14 @@ class TrailsImage:
 # Main program
 # ################
 
-def main(directory, file_prefix, file_suffix, number_of_files):
+def main(directory, file_prefix, file_suffix, number_of_files, location):
     sampling = 0.206
-    target_fwhm_arcsec = 1.5;
+    target_fwhm_arcsec = 1.5; # to help the gaussian fitting
 
     # create a file to write the results
     with open('seeing_measurement.csv', 'a') as results:
-        results.write('Date and time UTC,MJD,Mean FWHM in arcsec\n');
+        # header of CSV file
+        results.write('Date and time UTC,MJD,Seeing in arcsec\n');
 
         measurements = np.array([])
         datetimes = np.array([])
@@ -255,15 +256,15 @@ def main(directory, file_prefix, file_suffix, number_of_files):
         # For each file
         for i in range(1,number_of_files+1):
 
-            # Open FITS files
+            # Open FITS file
             filename = file_prefix + str(i) + file_suffix
             path = directory + filename
             print "Read FITS file " + path
             hdulist = fits.open(path)
 
             # Get date and time of observation in FITS header
-            datetime = hdulist[0].header['DATE-OBS']
-            time = Time(datetime, format='isot', scale='utc')
+            datetime_string = hdulist[0].header['DATE-OBS']
+            time = Time(datetime_string, format='isot', scale='utc')
 
             # Get length of X axis in FITS header
             length_x_axis = hdulist[0].header['NAXIS1']
@@ -273,23 +274,32 @@ def main(directory, file_prefix, file_suffix, number_of_files):
             img = TrailsImage(img_data, sampling, target_fwhm_arcsec, length_x_axis)
             img.search_trails()
             img.calculate_fwhm()
-            print "Date and time: %s UT" % datetime
+
+            # Print results
+            print "Date and time: %s UT" % datetime_string
             print "Number of trails: %i" % img.nb_trails()
             print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+
+            # Prepare plotting
             measurements = np.append(measurements, img.mean_fwhm())
             datetimes = np.append(datetimes, time.datetime)
 
             # Close FITS file
             hdulist.close()
 
-            results.write(datetime + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + '\n');
+            # Write result in a file
+            results.write(datetime_string + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + '\n');
+
+            # Time of the first image of the sequence (used below)
+            if(i == 1):
+                start_time = time
 
     results.closed
 
-    time.out_subfmt='date'
+    start_time.out_subfmt='date'
 
     plt.figure(1)
-    plt.title("Seeing St-Veran " + time.iso + ' (MJD ' + str(int(time.mjd)) + ')', fontsize=16)
+    plt.title('Seeing ' + location + ' ' + start_time.iso + ' (MJD ' + str(int(start_time.mjd)) + ')', fontsize=16)
     plt.plot(datetimes, measurements, 'ko')
     plt.xlabel('Time (UT)')
     plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
@@ -298,7 +308,9 @@ def main(directory, file_prefix, file_suffix, number_of_files):
     plt.show()
 
 
-main('/home/didier/seeing_images/2015-09-17/', 'zenith_sans_suivi-', '.fits', 53)
-#main('/home/didier/seeing_images/2015-09-18/', 'zenith-', '.fits', 175)
-#main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 91)
-#main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 153)
+#main('/home/didier/seeing_images/2015-09-17/', 'zenith_sans_suivi-', '.fits', 53, 'St-Veran')
+#main('/home/didier/seeing_images/2015-09-18/', 'zenith-', '.fits', 175, 'St-Veran')
+#main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 91, 'St-Veran')
+#main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 153, 'St-Veran')
+
+main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 2, 'St-Veran')
