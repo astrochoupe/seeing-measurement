@@ -272,6 +272,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
 
         measurements = np.array([])
         datetimes = np.array([])
+        errorbar = np.array([])
 
         # For each file
         for i in range(1,number_of_files+1):
@@ -304,6 +305,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
             # Prepare plotting
             measurements = np.append(measurements, img.mean_fwhm())
             datetimes = np.append(datetimes, time.datetime)
+            errorbar = np.append(errorbar, img.mean_stddev())
 
             # Close FITS file
             hdulist.close()
@@ -323,7 +325,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
 
     plt.figure(1)
     plt.title('Seeing ' + location + ' ' + start_time.iso + ' (MJD ' + str(int(start_time.mjd)) + ')', fontsize=16)
-    plt.plot(datetimes, measurements, 'ko')
+    plt.errorbar(datetimes, measurements, fmt='ko', yerr=errorbar)
     plt.xlabel('Time (UT)')
     plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
     plt.xticks(rotation='vertical')
@@ -336,4 +338,4 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
 #main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 91, 'St-Veran')
 #main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 153, 'St-Veran')
 
-main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 2, 'St-Veran')
+main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 3, 'St-Veran')
