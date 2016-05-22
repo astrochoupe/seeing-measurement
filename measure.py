@@ -131,7 +131,7 @@ class StarTrail:
         self.fwhm_max = np.max(self.fwhms)
         self.fwhm_mean = np.mean(self.fwhms)
         self.fwhm_median = np.median(self.fwhms)
-        self.fwhm_sdt_dev = np.std(self.fwhms)
+        self.fwhm_stddev = np.std(self.fwhms)
 
     def print_fwhms_results(self):
         """Print the min, max, mean, median and standard deviation of the FWHMs measurement"""
@@ -141,7 +141,7 @@ class StarTrail:
         print "FWHM max = %f arcsec " % self.fwhm_max
         print "FWHM mean = %f arcsec " % self.fwhm_mean
         print "FWHM median = %f arcsec " % self.fwhm_median
-        print "FWHM standard deviation = %f arcsec " % self.fwhm_sdt_dev
+        print "FWHM standard deviation = %f arcsec " % self.fwhm_stddev
 
     def print_fwhms_graph(self):
         """Plot the FWHM with the best-fit model along the star trail"""
@@ -203,6 +203,7 @@ class TrailsImage:
         """Measure the FWHM of the star trails"""
 
         self.trails_fwhm = np.array([])
+        self.trails_stddev = np.array([])
 
         # for each star trail
         for properties in self.segments_properties:
@@ -231,10 +232,15 @@ class TrailsImage:
 
             median_trail_fwhm = startrail.fwhm_median
             self.trails_fwhm = np.append(self.trails_fwhm, median_trail_fwhm)
+            self.trails_stddev = np.append(self.trails_stddev, startrail.fwhm_stddev)
 
     def mean_fwhm(self):
         """Give the mean FWHM of the trails"""
         return np.mean(self.trails_fwhm)
+
+    def mean_stddev(self):
+        """Give the standard deviation of the FWHM of the trails"""
+        return np.mean(self.trails_stddev)
 
 
 # ################
@@ -262,7 +268,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
     # Create a file to write the results
     with open('seeing_measurement.csv', 'a') as results:
         # Header of CSV file
-        results.write('Date and time UTC,MJD,Seeing in arcsec\n');
+        results.write('Date and time UTC,MJD,Seeing in arcsec,Std dev\n');
 
         measurements = np.array([])
         datetimes = np.array([])
@@ -293,6 +299,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
             print "Date and time: %s UT" % datetime_string
             print "Number of trails: %i" % img.nb_trails()
             print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+            print "StdDev FWHM of the trails: %f" %img.mean_stddev()
 
             # Prepare plotting
             measurements = np.append(measurements, img.mean_fwhm())
@@ -302,7 +309,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
             hdulist.close()
 
             # Write result in a file
-            results.write(datetime_string + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + '\n');
+            results.write(datetime_string + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + ',' + str(img.mean_stddev()) + '\n');
 
             # Time of the first image of the sequence (used below)
             if(i == 1):
