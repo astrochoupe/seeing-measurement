@@ -299,19 +299,20 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
             # Print results
             print "Date and time: %s UT" % datetime_string
             print "Number of trails: %i" % img.nb_trails()
-            print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
-            print "StdDev FWHM of the trails: %f" %img.mean_stddev()
+            if(img.nb_trails() > 0):
+                print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
+                print "StdDev FWHM of the trails: %f" %img.mean_stddev()
 
-            # Prepare plotting
-            measurements = np.append(measurements, img.mean_fwhm())
-            datetimes = np.append(datetimes, time.datetime)
-            errorbar = np.append(errorbar, img.mean_stddev())
+                # Prepare plotting
+                measurements = np.append(measurements, img.mean_fwhm())
+                datetimes = np.append(datetimes, time.datetime)
+                errorbar = np.append(errorbar, img.mean_stddev())
+
+                # Write result in a file
+                results.write(datetime_string + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + ',' + str(img.mean_stddev()) + '\n');
 
             # Close FITS file
             hdulist.close()
-
-            # Write result in a file
-            results.write(datetime_string + ',' + str(time.mjd) + ',' + str(img.mean_fwhm()) + ',' + str(img.mean_stddev()) + '\n');
 
             # Time of the first image of the sequence (used below)
             if(i == 1):
@@ -338,4 +339,5 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
 #main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 91, 'St-Veran')
 #main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 153, 'St-Veran')
 
-main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 3, 'St-Veran')
+#main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 3, 'St-Veran')
+main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 2, 'St-Veran')
