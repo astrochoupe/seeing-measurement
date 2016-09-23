@@ -5,6 +5,7 @@ __author__ = 'Didier Walliang'
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import os.path
 from matplotlib import dates
 from astropy.io import fits
 from astropy.modeling import models, fitting
@@ -333,13 +334,26 @@ def main(directory, file_prefix, file_suffix, number_of_files, result_file, show
     plt.title('Seeing ' + location + ' ' + instrument + ' ' + start_time.iso + ' (MJD ' + str(int(start_time.mjd)) + ')', fontsize=16)
     plt.xlabel('Time (UT)')
     if show_error_bar:
+        postfix_error_bars = '_withErrorBars'
         plt.errorbar(datetimes, measurements, fmt='ko', yerr=errorbar);
     else:
+        postfix_error_bars = ''
         plt.plot(datetimes, measurements, 'ko');
     plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
     plt.xticks(rotation='vertical')
     plt.ylabel('Seeing (arcsec)')
-    plt.show()
+    #plt.show()
+
+    # save plot in file
+    filename_beginning = 'seeing_' + location + '_' + start_time.iso + '_' + instrument + postfix_error_bars
+    filename_end = ''
+    index_img = 1
+    extension_img = '.png'
+    # take care to not override an existing file
+    while os.path.isfile(filename_beginning + filename_end + extension_img):
+        filename_end = '_' + str(index_img)
+        index_img += 1
+    plt.savefig(filename_beginning + filename_end + extension_img)
 
 # 2015
 
@@ -352,8 +366,8 @@ def main(directory, file_prefix, file_suffix, number_of_files, result_file, show
 
 # 2016
 
-main('/home/didier/seeing_images/2016-09-19/seeing1/', 'seeing-', '.fits', 121, 'null.csv', False, 0.206, 'St-Veran', 'T62')
-#main('/home/didier/seeing_images/2016-09-19/seeing2/', 'seeing2-', '.fits', 220, 'null.csv', False, 0.206, 'St-Veran', 'T62')
+#main('/home/didier/seeing_images/2016-09-19/seeing1/', 'seeing-', '.fits', 121, 'null.csv', False, 0.206, 'St-Veran', 'T62')
+main('/home/didier/seeing_images/2016-09-19/seeing2/', 'seeing2-', '.fits', 220, 'null.csv', False, 0.206, 'St-Veran', 'T62')
 #main('/home/didier/seeing_images/2016-09-19/seeing3/', 'seeing3-', '.fits', 224, 'null.csv', False, 0.206, 'St-Veran', 'T62')
 
 #main('/home/didier/seeing_images/2016-09-21/T62/', 'seeing1-', '.fits', 788, 'null.csv', False, 0.206, 'St-Veran', 'T62')
