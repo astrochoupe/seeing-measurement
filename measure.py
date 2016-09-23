@@ -247,7 +247,7 @@ class TrailsImage:
 # Main program
 # ################
 
-def main(directory, file_prefix, file_suffix, number_of_files, location=''):
+def main(directory, file_prefix, file_suffix, number_of_files, result_file, show_error_bar = False, sampling = 1, location='', instrument=''):
     """
     Measure the seeing of a sequence of images
 
@@ -258,15 +258,19 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
     :param number_of_files: the number of files (begins with 1 and ends with this number).
                             It is assumed that the number in the name of the files do not contains leading zero
                             (example: 'seeing-1.fit' to 'seeing-152.fit').
+    :param result_file: the file where the results will be written (CSV file)
+    :param show_error_bar: if we plot error bars (example : True)
+    :param sampling: the portion of sky viewed by a photosite (in arcsec)
     :param location: the location where the images have been taken. It is printed in the title of the plot image.
+    :param instrument: the instrument with which the images were taken
     :return: void. Create or append to a file named 'seeing_measurement.csv' in execution directory with the results.
                    Show a chart with the results.
     """
-    sampling = 0.206
-    target_fwhm_arcsec = 1.5; # to help the gaussian fitting
+
+    target_fwhm_arcsec = 1.5 # to help the gaussian fitting
 
     # Create a file to write the results
-    with open('seeing_measurement.csv', 'a') as results:
+    with open(result_file, 'a') as results:
         # Header of CSV file
         results.write('Date and time UTC,MJD,Seeing in arcsec,Std dev\n');
 
@@ -299,7 +303,8 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
             # Print results
             print "Date and time: %s UT" % datetime_string
             print "Number of trails: %i" % img.nb_trails()
-            if(img.nb_trails() > 0):
+            # if there is at least one star trail we can use and the incertitude of the measure is reasonable
+            if(img.nb_trails() > 0 and img.mean_stddev() < 10):
                 print "Mean FWHM of the trails: %f arcsec" % img.mean_fwhm()
                 print "StdDev FWHM of the trails: %f" %img.mean_stddev()
 
@@ -315,7 +320,7 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
             hdulist.close()
 
             # Time of the first image of the sequence (used below)
-            if(i == 1):
+            if 'start_time' not in locals():
                 start_time = time
 
     # Close results file
@@ -325,14 +330,18 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
     start_time.out_subfmt='date'
 
     plt.figure(1)
-    plt.title('Seeing ' + location + ' ' + start_time.iso + ' (MJD ' + str(int(start_time.mjd)) + ')', fontsize=16)
-    plt.errorbar(datetimes, measurements, fmt='ko', yerr=errorbar)
+    plt.title('Seeing ' + location + ' ' + instrument + ' ' + start_time.iso + ' (MJD ' + str(int(start_time.mjd)) + ')', fontsize=16)
     plt.xlabel('Time (UT)')
+    if show_error_bar:
+        plt.errorbar(datetimes, measurements, fmt='ko', yerr=errorbar);
+    else:
+        plt.plot(datetimes, measurements, 'ko');
     plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
     plt.xticks(rotation='vertical')
     plt.ylabel('Seeing (arcsec)')
     plt.show()
 
+# 2015
 
 #main('/home/didier/seeing_images/2015-09-17/', 'zenith_sans_suivi-', '.fits', 53, 'St-Veran')
 #main('/home/didier/seeing_images/2015-09-18/', 'zenith-', '.fits', 175, 'St-Veran')
@@ -340,4 +349,13 @@ def main(directory, file_prefix, file_suffix, number_of_files, location=''):
 #main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 153, 'St-Veran')
 
 #main('/home/didier/seeing_images/2015-09-19/', 'zenith_refocus1-', '.fits', 3, 'St-Veran')
-main('/home/didier/seeing_images/2015-09-19/', 'zenith-', '.fits', 2, 'St-Veran')
+
+# 2016
+
+main('/home/didier/seeing_images/2016-09-19/seeing1/', 'seeing-', '.fits', 121, 'null.csv', False, 0.206, 'St-Veran', 'T62')
+#main('/home/didier/seeing_images/2016-09-19/seeing2/', 'seeing2-', '.fits', 220, 'null.csv', False, 0.206, 'St-Veran', 'T62')
+#main('/home/didier/seeing_images/2016-09-19/seeing3/', 'seeing3-', '.fits', 224, 'null.csv', False, 0.206, 'St-Veran', 'T62')
+
+#main('/home/didier/seeing_images/2016-09-21/T62/', 'seeing1-', '.fits', 788, 'null.csv', False, 0.206, 'St-Veran', 'T62')
+#main('/home/didier/seeing_images/2016-09-21/T50/rotate/', 'seeing-t50-1-', '.fits', 84, 'null.csv', False, 0.4635, 'St-Veran', 'T50')
+#main('/home/didier/seeing_images/2016-09-21/T50/rotate/', 'seeing-t50-2-', '.fits', 254, 'null.csv', False, 0.4635, 'St-Veran', 'T50')
